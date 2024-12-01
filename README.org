@@ -1,0 +1,4 @@
+#+TITLE: Advent of Code
+
+Here are the solution to the Advent of Code of 2024.
+Let's help the historians
