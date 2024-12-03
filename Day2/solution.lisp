@@ -13,8 +13,7 @@
 
 (defun gradual-rule (a b)
   "Check if two numbers are gradual (absolute difference between 1 and 3, inclusive)."
-  (and (/= a b)  ;; Ensure the numbers are not identical
-       (>= (abs (- a b)) 1)
+  (and (>= (abs (- a b)) 1)
        (<= (abs (- a b)) 3)))
 
 (defun gradual? (rules l)
@@ -35,39 +34,30 @@
 
 ;; sorted is the same, but gradual must check for bad levels
 
-;; it simply check if the report is safe
 ;; if not, it remove one element and check again, it does that
 ;; for every element in the report
+
+(defvar l '(8 6 4 4 1))
+
+(defun gradual-with-dampener? (rules l)
+  (loop for i from 0 below (length l)
+        when (gradual? rules (remove (nth i l) l :count 1))
+          do (return-from gradual-with-dampener? t))
+  nil)
+
+(defun report->integers (report)
+  "Convert a report to a list of integers"
+  (map 'list #'parse-integer (uiop:split-string report)))
+
 (defun safe-with-dampener? (report)
-  "Check if a report is safe, allowing one level to be ignored if it makes the report safe.
-  Return 1 if safe, 0 otherwise."
-  (let* ((levels (map 'list #'parse-integer (uiop:split-string report)))
-         (is-safe
-           (lambda (levels)
-             (and (sorted? levels) (gradual? #'gradual-rule levels)))))
-    (if (or (funcall is-safe levels)  ;; Check if the original report is safe
-            (some (lambda (i)
-                    (funcall is-safe (remove (nth i levels) levels)))
-                  (loop for i from 0 below (length levels) collect i)))
-        1  ;; Safe
-        0)))
+  "Given a report as a string, return 1 it safe else it return 0
+This function account for the problem dampener"
+  (if (and (sorted? (report->integers report))
+	   (gradual-with-dampener? #'gradual-rule (report->integers report)))
+      1
+      0))
 
+(defun solve2 (filename)
+  "Solve the second puzzle given the filename of the input"
+  (reduce #'+ (mapcar #'safe-with-dampener? (read-input filename))))
 
-(defun solve2 (f)
-  (reduce #'+ (mapcar #'safe-with-dampener? (read-input f))))
-
-(defun test (report)
-  "Check if a report is safe, allowing one level to be ignored if it makes the report safe.
-  Return 1 if safe, 0 otherwise."
-  (let* ((levels (map 'list #'parse-integer (uiop:split-string report)))
-         (is-safe
-           (lambda (levels)
-             (and (or (every #'<= levels (rest levels))  ;; Allow for ascending order
-                      (every #'>= levels (rest levels))) ;; Allow for descending order
-                  (gradual? #'gradual-rule levels)))))
-    (if (or (funcall is-safe levels)  ;; Check if the original report is safe
-            (some (lambda (i)
-                    (funcall is-safe (remove (nth i levels) levels)))
-                  (loop for i from 0 below (length levels) collect i)))
-        1  ;; Safe
-        0)))
